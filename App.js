@@ -25,6 +25,8 @@ import {
   View,
 } from 'react-native';
 
+import { StickerPicker } from './src';
+
 //3rd party
 type Props = {};
 export default class App extends Component<Props> {
@@ -32,117 +34,50 @@ export default class App extends Component<Props> {
     super(props);
 
     this.state = {
-      loaded: false,
-      aspectRatio: 2,
-      _isMounted: false,
-      pan: new Animated.ValueXY(),
-      showCircle1: false,
-      showCircle2: false,
+      pickerVisible: false,
     };
-
-    this._visibility = new Animated.Value(1);
-
-    this.panResponder = PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onPanResponderMove: Animated.event([
-        null,
-        {
-          dx: this.state.pan.x,
-          dy: this.state.pan.y,
-        },
-      ]),
-      onPanResponderRelease: (e, gesture) => {
-        this.state.pan.setOffset({x: this.currentPanValue.x, y: this.currentPanValue.y});
-        this.state.pan.setValue({x: 0, y: 0});
-      },
-    });
   }
-
-  componentDidMount() {
-    this.setState({ _isMounted: true });
-
-    this.currentPanValue = {x: 0, y: 0};
-    this.panListener = this.state.pan.addListener((value) => this.currentPanValue = value);
-  }
-
-  componentWillUnmount() {
-    this.setState({ _isMounted: false });
-
-    this.state.pan.removeListener(this.panListener);
-  }
-
-  takeViewShot() {
-    this.viewShot.capture().then(uri => {
-      const modificationDate = new Date().getTime();
-      Image.getSize(uri, (width, height) => {
-        this.setState({
-          finalImage: {
-            uri: uri,
-            width: width,
-            height: height
-          }
-          })
-      });
-    });
-}
 
   render() {
-
     const { style } = this.props;
-    const { finalImage, loaded } = this.state;
-
-    const transition = {
-      opacity: this._visibility,
-    };
-
-    const doggieSource = 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80';
-    const imagieUrl = this.state.finalImage ? this.state.finalImage.uri : null;
+    const { finalImage } = this.state;
 
     return (
       <View style={styles.container}>
-      { !finalImage && (
+      <Text style={styles.appTitle}>React Native Stickers</Text>
+      {!finalImage && (
         <View>
-        <ViewShot
-          style={{ flex: null, width: '100%', height: 400 }}
-          ref={ref => {
-            this.viewShot = ref;
-          }}
-          options={{ format: 'jpg', quality: 1.0 }}
-        >
-
-          <ImageBackground
-            ref={image => (this.imageComponent = image)}
-            source={{ uri: doggieSource }}
-            style={styles.attachment}
-          >
-          { this.state.showCircle1 && (
-            <Animated.View
-              {...this.panResponder.panHandlers}
-              style={[this.state.pan.getLayout(), styles2.circle]}
-            >
-              <Text style={styles2.text}>1 month!</Text>
-            </Animated.View>
-          )}
-          </ImageBackground>
-          <View>
-            <Text>Select a sticker</Text>
-            <TouchableOpacity onPress={() => this.setState({showCircle1: true})}>
-              <Text style={{color:'blue'}}>A circle!</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => this.setState({ pickerVisible: true })}>
+            <Text>Add Sticker!</Text>
+          </TouchableOpacity>
+          <StickerPicker
+            visible={this.state.pickerVisible}
+            topContainer={<View style={{paddingTop: 60, paddingBottom: 40, textAlign: 'center', alignItem: 'center', justifyContent: 'center'}}><Text style={{alignSelf: 'center', fontSize: 18}}>Get stickering!</Text></View>}
+            bottomContainer={<Text style={styles.actionTitle}>Save Picture</Text>}
+            bottomContainerStyle={styles.bottomContainerStyle}
+            completedEditing={(imageUri, width, height) => this.setState({ pickerVisible: false, finalImage: {imageUri, width, height} })}
+            includeDefaultStickers={true}
+            imageStyle={null}
+            previewImageSize={50}
+            stickerSize={100}
+            imageSource={'https://images.unsplash.com/photo-1507146426996-ef05306b995a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=1500&q=80'}
+            stickers={null}
+           />
           </View>
-          </ViewShot>
-          <TouchableOpacity onPress={() => this.takeViewShot()}>
-            <Text style={{color:'blue'}}>TAKE A PIC!</Text>
+        )}
+       {finalImage && (
+         <View>
+           <Image
+             style={styles.finalAttachment}
+             source={{uri: finalImage.imageUri}}
+           />
+           <TouchableOpacity
+             onPress={() => this.setState({ pickerVisible: true, finalImage: false})}
+            >
+            <Text style={styles.actionTitle}>Do it again!</Text>
           </TouchableOpacity>
         </View>
-        )}
 
-        {finalImage && (
-          <View>
-            <Text>Here's your final image!!</Text>
-            <Text>{imagieUrl}</Text>
-            <Image source={require(imagieUrl)}  />
-          </View>
         )}
       </View>
     );
@@ -150,15 +85,51 @@ export default class App extends Component<Props> {
 }
 
 let Window = Dimensions.get('window');
+let CIRCLE_RADIUS = 45;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'green',
+    backgroundColor: 'white',
+  },
+  bottomContainerStyle: {
+    height: 80
   },
   attachment: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    height: 500,
+    width: Window.width,
+  },
+  actionTitle: {
+    color:'blue',
+    alignSelf: 'center',
+    marginTop: 20,
+    fontSize: 20
+  },
+  stickerPickerContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    width: Window.width,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  title: {
+    width: Window.width,
+    marginVertical: 5,
+    fontSize: 20,
+    textAlign: 'center'
+  },
+  appTitle: {
+    width: Window.width,
+    marginVertical: 25,
+    fontSize: 25,
+    textAlign: 'center'
+  },
+  finalAttachment: {
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'stretch',
@@ -171,33 +142,28 @@ const styles = StyleSheet.create({
   inactiveIndicator: {
     opacity: 0,
   },
-});
-
-let CIRCLE_RADIUS = 36;
-let styles2 = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-  },
-  dropZone: {
-    height: 100,
-    backgroundColor: '#2c3e50',
-  },
   text: {
-    marginTop: 25,
+    fontSize: 15,
+    alignSelf: 'center',
     marginLeft: 5,
     marginRight: 5,
     textAlign: 'center',
     color: '#fff',
   },
-  draggableContainer: {
-    position: 'absolute',
-    top: Window.height / 2 - CIRCLE_RADIUS,
-    left: Window.width / 2 - CIRCLE_RADIUS,
+  actionTitle: {
+    color:'blue',
+    alignSelf: 'center',
+    marginTop: 20,
+    fontSize: 20
   },
   circle: {
-    backgroundColor: '#1abc9c',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
     width: CIRCLE_RADIUS * 2,
     height: CIRCLE_RADIUS * 2,
+    padding: 5,
+    margin: 2,
     borderRadius: CIRCLE_RADIUS,
   },
 });
