@@ -50,3 +50,6 @@ Install via npm:
 
 ## Contributions/Suggestions
 Feel free to add issues and PRs.  As with any project, there are things to improve!
+
+## Author / Share Rights
+Dave Barner (dbarner@gmail.com); Code is free for all to use. <3
